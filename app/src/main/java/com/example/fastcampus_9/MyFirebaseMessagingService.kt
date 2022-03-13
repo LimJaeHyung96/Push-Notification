@@ -1,11 +1,17 @@
 package com.example.fastcampus_9
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.PendingIntent.FLAG_MUTABLE
+import android.app.PendingIntent.FLAG_UPDATE_CURRENT
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.widget.RemoteViews
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -48,16 +54,40 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun createNotification(
         type: NotificationType,
         title: String?,
         message: String?
     ): Notification {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("notificationType", "${type.title} 타입")
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+
+        val pendingIntent = if (Build.VERSION.SDK_INT == Build.VERSION_CODES.S) {
+            PendingIntent.getActivity(
+                this,
+                type.id,
+                intent,
+                FLAG_MUTABLE
+            )
+        } else {
+            PendingIntent.getActivity(
+                this,
+                type.id,
+                intent,
+                FLAG_UPDATE_CURRENT
+            )
+        }
+
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
 
         when (type) {
             NotificationType.NORMAL -> Unit
